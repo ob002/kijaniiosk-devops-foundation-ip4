@@ -1,0 +1,151 @@
+==========================================
+KijaniKiosk IaC Pipeline
+Mode: multipass
+Started: Mon Oct  5 01:59:05 PM EAT 2026
+==========================================
+[1/4] Running Terraform...
+[0m[1mInitializing the backend...[0m
+
+[0m[1mUpgrading modules...[0m
+- servers in modules/app_server
+
+[0m[1mInitializing provider plugins...[0m
+- Finding latest version of hashicorp/null...
+- Finding latest version of hashicorp/external...
+- Using previously-installed hashicorp/null v3.3.2
+- Using previously-installed hashicorp/external v2.4.2
+
+[0m[1m[32mTerraform has been successfully initialized![0m[32m[0m
+[0m[32m
+You may now begin working with Terraform. Try running "terraform plan" to see
+any changes that are required for your infrastructure. All Terraform commands
+should now work.
+
+If you ever set or change modules or backend configuration for Terraform,
+rerun this command to reinitialize your working directory. If you forget, other
+commands will detect it and remind you to do so if necessary.[0m
+[0m[1mmodule.servers["logs"].data.external.multipass_ip: Reading...[0m[0m
+[0m[1mmodule.servers["api"].data.external.multipass_ip: Reading...[0m[0m
+[0m[1mmodule.servers["payments"].data.external.multipass_ip: Reading...[0m[0m
+[0m[1mmodule.servers["api"].data.external.multipass_ip: Still reading... [00m10s elapsed][0m[0m
+[0m[1mmodule.servers["logs"].data.external.multipass_ip: Still reading... [00m10s elapsed][0m[0m
+[0m[1mmodule.servers["payments"].data.external.multipass_ip: Still reading... [00m10s elapsed][0m[0m
+[0m[1mmodule.servers["payments"].data.external.multipass_ip: Read complete after 12s [id=-][0m
+[0m[1mmodule.servers["api"].data.external.multipass_ip: Read complete after 12s [id=-][0m
+[0m[1mmodule.servers["logs"].data.external.multipass_ip: Read complete after 12s [id=-][0m
+[0m[1mmodule.servers["logs"].null_resource.app_server: Refreshing state... [id=734515864209273424][0m
+[0m[1mmodule.servers["api"].null_resource.app_server: Refreshing state... [id=7842522326619825054][0m
+[0m[1mmodule.servers["payments"].null_resource.app_server: Refreshing state... [id=1918990603513834603][0m
+
+[0m[1m[32mNo changes.[0m[1m Your infrastructure matches the configuration.[0m
+
+[0mTerraform has compared your real infrastructure against your configuration
+and found no differences, so no changes are needed.
+[0m[1m[32m
+Apply complete! Resources: 0 added, 0 changed, 0 destroyed.[0m
+[0m[1m[32m
+Outputs:
+
+[0mapi_server_ip = "10.89.160.175"
+logs_server_ip = "10.89.160.40"
+payments_server_ip = "10.89.160.157"
+ssh_commands = {
+  "api" = "ssh -i ~/.ssh/id_rsa ubuntu@10.89.160.175"
+  "logs" = "ssh -i ~/.ssh/id_rsa ubuntu@10.89.160.40"
+  "payments" = "ssh -i ~/.ssh/id_rsa ubuntu@10.89.160.157"
+}
+[2/4] Extracting server IPs and generating inventory...
+Generated inventory.ini:
+[kijaniiosk]
+api ansible_host=10.89.160.175
+payments ansible_host=10.89.160.157
+logs ansible_host=10.89.160.40
+[3/4] Running Ansible playbook...
+
+PLAY [Configure KijaniKiosk Servers to Week 3 Standards] ***********************
+
+TASK [Gathering Facts] *********************************************************
+[WARNING]: Host 'api' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.21/reference_appendices/interpreter_discovery.html for more information.
+[WARNING]: Host 'logs' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.21/reference_appendices/interpreter_discovery.html for more information.
+[WARNING]: Host 'payments' is using the discovered Python interpreter at '/usr/bin/python3.10', but future installation of another Python interpreter could cause a different interpreter to be discovered. See https://docs.ansible.com/ansible-core/2.21/reference_appendices/interpreter_discovery.html for more information.
+ok: [api]
+ok: [logs]
+ok: [payments]
+
+TASK [Install required packages] ***********************************************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Create service account] **************************************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Create application directories] ******************************************
+ok: [api] => (item=/opt/kijaniiosk)
+ok: [payments] => (item=/opt/kijaniiosk)
+ok: [logs] => (item=/opt/kijaniiosk)
+ok: [api] => (item=/opt/kijaniiosk/api)
+ok: [payments] => (item=/opt/kijaniiosk/payments)
+ok: [logs] => (item=/opt/kijaniiosk/logs)
+ok: [api] => (item=/opt/kijaniiosk/api/logs)
+ok: [logs] => (item=/opt/kijaniiosk/logs/logs)
+ok: [payments] => (item=/opt/kijaniiosk/payments/logs)
+ok: [api] => (item=/opt/kijaniiosk/config)
+ok: [logs] => (item=/opt/kijaniiosk/config)
+ok: [payments] => (item=/opt/kijaniiosk/config)
+
+TASK [Deploy systemd unit file] ************************************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Deploy environment file (Challenge D: must be in /opt, not /etc)] ********
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+TASK [Enable UFW] **************************************************************
+ok: [payments]
+ok: [logs]
+ok: [api]
+
+TASK [Allow required ports] ****************************************************
+ok: [api] => (item=22)
+ok: [payments] => (item=22)
+ok: [logs] => (item=22)
+ok: [api] => (item=80)
+ok: [payments] => (item=80)
+ok: [logs] => (item=80)
+ok: [api] => (item=443)
+ok: [payments] => (item=443)
+ok: [logs] => (item=443)
+ok: [api] => (item=8080)
+ok: [payments] => (item=8080)
+ok: [logs] => (item=8080)
+ok: [payments] => (item=8443)
+ok: [api] => (item=8443)
+ok: [logs] => (item=8443)
+ok: [payments] => (item=5044)
+ok: [api] => (item=5044)
+ok: [logs] => (item=5044)
+
+TASK [Configure persistent journal] ********************************************
+ok: [payments]
+ok: [api]
+ok: [logs]
+
+TASK [Deploy logrotate configuration] ******************************************
+ok: [api]
+ok: [payments]
+ok: [logs]
+
+PLAY RECAP *********************************************************************
+api                        : ok=10   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+logs                       : ok=10   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+payments                   : ok=10   changed=0    unreachable=0    failed=0    skipped=0    rescued=0    ignored=0   
+
+[4/4] Pipeline complete!
+Finished: Mon Oct  5 02:00:11 PM EAT 2026
+

@@ -1,0 +1,4 @@
+---
+server_role: api
+server_port: 8080
+service_name: kk-api

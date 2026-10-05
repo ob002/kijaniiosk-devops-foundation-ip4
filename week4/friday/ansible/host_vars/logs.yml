@@ -1,0 +1,4 @@
+---
+server_role: logs
+server_port: 5044
+service_name: kk-logs

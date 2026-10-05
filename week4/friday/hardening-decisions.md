@@ -1,0 +1,29 @@
+# KijaniKiosk Security Hardening Decisions
+
+## Executive Summary
+This document outlines the comprehensive security hardening decisions made during the provisioning and configuration of the KijaniKiosk infrastructure. The architecture consists of three dedicated Ubuntu 22.04 servers (API, Payments, and Logs) managed entirely via Infrastructure as Code (IaC) using Terraform and Ansible. The primary goal of these hardening measures is to establish a robust, defense-in-depth security posture that protects sensitive financial transaction data, ensures high service availability, and mitigates common attack vectors without requiring manual, error-prone intervention. By codifying these security controls directly into our Ansible playbooks and Terraform modules, we guarantee that every server deployed, whether in a local development environment or a production cloud environment, adheres to the exact same strict security baseline.
+
+## Threat Model and Design Philosophy
+The KijaniKiosk payments server handles sensitive financial transactions, making it a high-value target for malicious actors. Our design philosophy strictly follows the Principle of Least Privilege (PoLP) and a Zero Trust network model. We operate under the assumption that the network is inherently hostile and that any software service could potentially be compromised via a zero-day vulnerability. Therefore, we aggressively isolate services, restrict filesystem access at the kernel level, and enforce strict network boundaries. The use of a dedicated, non-interactive service account (`kk-payments`) ensures that even if the application layer is exploited, the attacker is confined to a highly restricted environment with no ability to escalate privileges, pivot to other services, or modify critical operating system files.
+
+## Security Controls Implemented
+
+| Security Control | What it Does | Risk Mitigated |
+|------------------|--------------|----------------|
+| **Dynamic SSH Key Authentication** | Requires cryptographic RSA key pairs for access; completely disables password-based authentication. | Mitigates automated brute-force and credential-stuffing attacks against the SSH daemon. |
+| **Strict UFW Firewall Rules** | Defaults to denying all incoming traffic; explicitly allows only ports 22, 80, 443, 8080, 8443, and 5044. | Prevents unauthorized network scanning and limits the attack surface to essential, vetted services only. |
+| **Systemd `ProtectSystem=strict`** | Mounts the `/usr`, `/boot`, and `/etc` directories as read-only for the executing service. | Prevents a compromised application from modifying system binaries, libraries, or critical configuration files. |
+| **Systemd `NoNewPrivileges=true`** | Ensures the service process and any child processes cannot gain new privileges via `setuid` or `setgid` bits. | Mitigates privilege escalation exploits that rely on binary execution to gain root or elevated access. |
+| **Systemd `PrivateTmp=true`** | Provides the service with an isolated, private `/tmp` and `/var/tmp` filesystem namespace. | Prevents symlink attacks, race conditions, and cross-service data leakage via shared temporary directories. |
+| **Dedicated Non-Root Service Account** | Runs the application under the `kk-payments` user with a `/usr/sbin/nologin` shell and no home directory. | Limits the blast radius of an application-level compromise, preventing system-wide takeover or lateral movement. |
+| **Environment Files in `/opt`** | Stores sensitive configuration (per Challenge D) in `/opt/kijaniiosk/config/` with strict `0640` permissions, avoiding `/etc`. | Prevents accidental exposure of secrets to system-wide readable directories or misconfigured system services. |
+| **Persistent Journald Logging** | Configures `Storage=persistent` in `journald.conf` and deploys custom, size-limited `logrotate` rules. | Ensures critical audit trails survive unexpected reboots and prevents disk exhaustion attacks via unbounded log growth. |
+
+## Deep Dive: Systemd Hardening for Payments
+The `kk-payments` service is the crown jewel of this infrastructure. By applying the specific systemd hardening directives listed above, we achieve a systemd security exposure score of **below 2.5**. This score is a quantitative measure provided by `systemd-analyze security` that evaluates how well a service is isolated from the rest of the operating system. A score under 2.5 indicates an "OK" to "Excellent" exposure level, meaning the service is heavily sandboxed and lacks the capabilities required to perform most common post-exploitation activities.
+
+## Known Limitations and Future Improvements
+While this baseline provides strong, enterprise-grade host-level security, it is not a silver bullet. This current implementation does not include a Web Application Firewall (WAF) to filter malicious HTTP payloads at the edge, nor does it implement active Intrusion Detection Systems (IDS) monitoring, though the `fail2ban` package is pre-installed for future enablement. Additionally, while the Terraform state is stored securely, native state locking (e.g., via AWS DynamoDB) is documented for the cloud execution path to prevent concurrent state corruption in team environments. Future iterations of this pipeline should integrate automated vulnerability scanning (e.g., Trivy or Grype) directly into the CI/CD workflow and implement mutual TLS (mTLS) between the API and Payments services to encrypt traffic in transit.
+
+## Conclusion
+These hardening decisions collectively ensure that the KijaniKiosk infrastructure meets rigorous security standards suitable for handling sensitive operations. By leveraging Ansible's idempotent configuration management, we guarantee that these controls are consistently applied, verified, and maintained across the entire fleet. This provides Nia and all stakeholders with absolute confidence in the platform's resilience, reproducibility, and operational security.

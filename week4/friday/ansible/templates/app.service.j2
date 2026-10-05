@@ -1,0 +1,21 @@
+[Unit]
+Description=KijaniKiosk {{ server_role }} Service
+After=network.target
+
+[Service]
+Type=simple
+User={{ service_account }}
+WorkingDirectory={{ app_base_dir }}/{{ server_role }}
+ExecStart=/usr/bin/python3 {{ app_base_dir }}/{{ server_role }}/app.py
+EnvironmentFile={{ app_base_dir }}/config/{{ server_role }}.env
+Restart=on-failure
+
+# Hardening directives (injected from host_vars)
+{% if systemd_hardening is defined %}
+{% for key, value in systemd_hardening.items() %}
+{{ key }}={{ value }}
+{% endfor %}
+{% endif %}
+
+[Install]
+WantedBy=multi-user.target

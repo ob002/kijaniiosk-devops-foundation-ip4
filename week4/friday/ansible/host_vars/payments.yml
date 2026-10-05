@@ -1,0 +1,41 @@
+---
+server_role: payments
+server_port: 8443
+service_name: kk-payments
+
+# Maximum safe hardening directives to achieve systemd-analyze security score < 2.5
+systemd_hardening:
+  # Filesystem protections
+  ProtectSystem: strict
+  ProtectHome: true
+  PrivateTmp: true
+  PrivateDevices: true
+  ProtectKernelTunables: true
+  ProtectKernelModules: true
+  ProtectKernelLogs: true
+  ProtectControlGroups: true
+  ProtectClock: true
+  ProtectHostname: true
+  ProtectProc: invisible
+
+  # Privilege restrictions (The big score droppers)
+  NoNewPrivileges: true
+  RestrictSUIDSGID: true
+  CapabilityBoundingSet: ""
+  AmbientCapabilities: ""
+
+  # Network and Namespace restrictions
+  RestrictAddressFamilies: AF_UNIX AF_INET AF_INET6
+  RestrictNamespaces: true
+  PrivateUsers: true
+
+  # System call restrictions
+  SystemCallFilter: "@system-service"
+  SystemCallArchitectures: native
+  LockPersonality: true
+  MemoryDenyWriteExecute: true
+  RestrictRealtime: true
+
+  # Misc
+  UMask: "0077"
+  RemoveIPC: true
