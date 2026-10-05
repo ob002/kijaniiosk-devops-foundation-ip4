@@ -1,0 +1,27 @@
+---
+# Shared variables for all KijaniKiosk servers
+ansible_user: ubuntu
+ansible_ssh_private_key_file: ~/.ssh/id_rsa
+ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+
+# Service account
+service_account: kk-payments
+
+# Base directory
+app_base_dir: /opt/kijaniiosk
+
+# Packages to install
+required_packages:
+  - python3
+  - nginx
+  - fail2ban
+  - ufw
+
+# Firewall rules
+allowed_ports:
+  - 22
+  - 80
+  - 443
+  - 8080
+  - 8443
+  - 5044

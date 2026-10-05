@@ -1,0 +1,104 @@
+---
+- name: Configure KijaniKiosk Servers to Week 3 Standards
+  hosts: kijaniiosk
+  become: yes
+  gather_facts: yes
+
+  handlers:
+    - name: Restart application service
+      ansible.builtin.systemd:
+        name: "{{ service_name }}"
+        state: restarted
+        daemon_reload: yes
+
+    - name: Reload firewall
+      ansible.builtin.command: ufw reload
+      changed_when: false
+
+  tasks:
+    # Phase 1: Packages
+    - name: Install required packages
+      ansible.builtin.apt:
+        name: "{{ required_packages }}"
+        state: present
+        update_cache: yes
+      tags: packages
+
+    # Phase 2: Service accounts
+    - name: Create service account
+      ansible.builtin.user:
+        name: "{{ service_account }}"
+        system: yes
+        shell: /usr/sbin/nologin
+        create_home: no
+      tags: accounts
+
+    # Phase 3: Directory structure
+    - name: Create application directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ service_account }}"
+        group: "{{ service_account }}"
+        mode: '0755'
+      loop:
+        - "{{ app_base_dir }}"
+        - "{{ app_base_dir }}/{{ server_role }}"
+        - "{{ app_base_dir }}/{{ server_role }}/logs"
+        - "{{ app_base_dir }}/config"
+      tags: directories
+
+    # Phase 4: Systemd unit files
+    - name: Deploy systemd unit file
+      ansible.builtin.template:
+        src: templates/app.service.j2
+        dest: /etc/systemd/system/{{ service_name }}.service
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart application service
+      tags: systemd
+
+    - name: "Deploy environment file (Challenge D: must be in /opt, not /etc)"
+      ansible.builtin.template:
+        src: templates/app.env.j2
+        dest: "{{ app_base_dir }}/config/{{ server_role }}.env"
+        owner: "{{ service_account }}"
+        group: "{{ service_account }}"
+        mode: '0640'
+      notify: Restart application service
+      tags: systemd
+
+    # Phase 5: Firewall rules
+    - name: Enable UFW
+      ansible.builtin.ufw:
+        state: enabled
+      tags: firewall
+
+    - name: Allow required ports
+      ansible.builtin.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop: "{{ allowed_ports }}"
+      notify: Reload firewall
+      tags: firewall
+
+    # Phase 6: Journal persistence
+    - name: Configure persistent journal
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/journald.conf
+        regexp: '^#?Storage='
+        line: 'Storage=persistent'
+      notify: Restart application service
+      tags: journal
+
+    # Phase 7: Logrotate
+    - name: Deploy logrotate configuration
+      ansible.builtin.template:
+        src: templates/logrotate.j2
+        dest: /etc/logrotate.d/{{ service_name }}
+        owner: root
+        group: root
+        mode: '0644'
+      tags: logrotate

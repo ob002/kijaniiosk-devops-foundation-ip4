@@ -1,0 +1,13 @@
+{{ app_base_dir }}/{{ server_role }}/logs/*.log {
+    daily
+    missingok
+    rotate 14
+    compress
+    delaycompress
+    notifempty
+    create 0640 {{ service_account }} {{ service_account }}
+    sharedscripts
+    postrotate
+        systemctl reload {{ service_name }} > /dev/null 2>&1 || true
+    endscript
+}
